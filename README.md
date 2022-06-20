@@ -15,10 +15,14 @@ Run below command to run the program
 
 `./brainfuck-go -h`
 
-Usage of ./BF_Interpreter:
+Usage of ./brainfuck-go:
+
   -filename string
+
     	Enter input file name to interpret (default "input.bf")
+
   -input string
+
     	Enter input character if required
 
 `./brainfuck-go -filename input.bf -input m`
