@@ -24,6 +24,8 @@ Usage of ./brainfuck-go:
   -input string
 
     	Enter input character if required
+     
+By defaut the input data to interpret will be taken from input.bf
 
 `./brainfuck-go -filename input.bf -input m`
 
