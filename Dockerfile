@@ -9,5 +9,4 @@ RUN apk add --update git openssh-client && rm -rf /var/cache/apk/* && \
 WORKDIR /brainfuck-go
 COPY . .
 RUN go mod download && \
-    go build -o brainfuck-go bf.go && \
-    go test -v
+    go build -o brainfuck-go bf.go
