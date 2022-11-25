@@ -145,7 +145,7 @@ func main() {
 		Name:  "Brainfuck Interpreter",
 		Usage: "A Brainfuck cli interpreter",
 		Action: func(c *cli.Context) error {
-			if len(c.Args()) > 0 {
+			if c.NArg() > 0 {
 				file, err := os.Open(c.Args().Get(0))
 				if err != nil {
 					log.Fatal(err)
