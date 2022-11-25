@@ -1,37 +1,32 @@
 package main
 
 import (
-	"errors"
-	"flag"
+	"bufio"
 	"fmt"
-	"io/ioutil"
+	"io"
+	"log"
+	"os"
+	"strconv"
+	"github.com/urfave/cli"
 )
 
-// struture OutputStack to store the index and the character it got interpreted
-type OutputStack struct {
-	Letter string
-	Index  int
-}
+type Stack []string
 
-var response []OutputStack
-
-type Stack []uint16
-
-func (s *Stack) Push(v uint16) {
+func (s *Stack) Push(v string) {
 	*s = append(*s, v)
 }
 
-func (s *Stack) Pop() (uint16, error) {
+func (s *Stack) Pop() string {
 	l := len(*s)
 	if l > 0 {
 		op := (*s)[l-1]
 		*s = (*s)[:l-1]
-		return op, nil
+		return op
 	}
-	return 0, errors.New("Compilation error.")
+	return ""
 }
 
-func (s *Stack) Top() uint16 {
+func (s *Stack) Top() string {
 	n := len(*s) - 1
 	return (*s)[n]
 }
@@ -40,116 +35,142 @@ func (s Stack) Len() int {
 	return len(s)
 }
 
-const (
-	arraylen = 65536
-)
+func Execute(op string, indexPtr *int, program *[]uint32, output *string) {
+	switch op {
+	// Move the pointer to the right
+	case ">":
+		if *indexPtr == 32000 {
+			break
+		}
+		(*indexPtr)++
+	// Move the pointer to the left
+	case "<":
+		if *indexPtr == 0 {
+			*indexPtr = 0
+			break
+		}
+		(*indexPtr)--
+	// Increment the memory cell under the pointer
+	case "+":
+		(*program)[*indexPtr]++
+	// Decrement the memory cell under the pointer
+	case "-":
+		if (*program)[*indexPtr] == 0 {
+			(*program)[*indexPtr] = 255
+			break
+		}
+		(*program)[*indexPtr]--
+	// Output the character signified by the cell at the pointer
+	case ".":
+		character := string((*program)[*indexPtr])
+		*output+=fmt.Sprint(character)
+	// Input a character and store it in the cell at the pointer
+	case ",":
+		scanner := bufio.NewScanner(os.Stdin)
+		input, err := strconv.ParseUint(scanner.Text(), 10, 32)
+		if err != nil {
+			log.Fatal(err)
+		}
+		(*program)[*indexPtr] = uint32(input)
+	default:
+	}
+}
+
+func Interpret(stream io.Reader)(string){
+	var mainStack Stack
+	var loopStack Stack
+	var op string
+	buf := make([]byte, 1)
+	program := make([]uint32, 32000)
+	stackPtr := 0
+	result:=""
+
+	for {
+		if loopStack.Len() > 0 {
+			op = loopStack.Pop()
+		} else {
+			_, err := io.ReadFull(stream, buf)
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
+				log.Fatal(err)
+				break
+			}
+			op = string(buf)
+		}
+		switch op {
+		// Execute on operators
+		case ">", "<", "+", "-", ".", ",":
+			Execute(op, &stackPtr, &program, &result)
+			mainStack.Push(op)
+			break
+		case "[":
+			mainStack.Push(op)
+			break
+		case "]":
+			mainStack.Push(op)
+			if program[stackPtr] > 0 {
+				innerLoop := 0
+				firsttimehit := false
+				for {
+					operation := mainStack.Pop()
+					if operation == "" {
+						break
+					}
+					loopStack.Push(operation)
+					// nested loops
+					if operation == "]" && firsttimehit {
+						innerLoop++
+					}
+					if operation == "[" {
+						if innerLoop == 0 {
+							break
+						} else {
+							innerLoop--
+						}
+					}
+					firsttimehit = true
+				}
+			}
+		default:
+		}
+	}
+	return result
+}
 
 func main() {
-	//Get all the optional input
-	/*
-		-filename string <default:input.bf>
-		-input string <default:"">
-	*/
-	filename := flag.String("filename", "input.bf", "Enter input file name to interpret")
-
-	us_inp := flag.String("input", "", "Enter input character if required")
-
-	flag.Parse()
-
-	/*
-	    -input:
-	   	*filename name that defined in var:filename
-	*/
-	data, err := readInputData(*filename)
-	if err != nil {
-		fmt.Println("found error in reading input file " + err.Error())
-		return
-	}
-	/*
-	    -input:
-	   	*data from input defined filename
-	   	*us_inp input defined to add in "," as putchar
-	*/
-	output, err := interpret_bf(data, *us_inp)
-	if err != nil {
-		fmt.Println("found error while interpreting input: " + err.Error())
-		return
-	}
-	/*
-	    -input:
-	   	output - oupt generated from the function interpret_bf
-	*/
-	err = writeOutputData(output)
-	if err != nil {
-		fmt.Println("found error while interpreting input " + err.Error())
-		return
-	}
-	fmt.Println("The given input successfully interpreted in output.txt")
-	fmt.Println(response)
-}
-
-// This will be the major function for that perform as interpreter
-// The terms are followed that defined in
-func interpret_bf(input, readinput string) (string, error) {
-	result := ""
-	i := 0
-	data := make([]int16, arraylen)
-	var bf_ptr, data_ptr uint16 = 0, 0
-	var bf_stack Stack
-	//Iterating input character one by one
-	for i < len(input) {
-		switch input[i] {
-		case '>':
-			data_ptr++
-		case '<':
-			data_ptr--
-		case '+':
-			data[data_ptr]++
-		case '-':
-			data[data_ptr]--
-		case '.':
-			response = append(response, OutputStack{string(rune(data[data_ptr] % 128)), i})
-			result += string(rune(data[data_ptr] % 128))
-		case ',':
-			if len([]byte(readinput)) > 0 {
-				data[data_ptr] = int16([]byte(readinput)[0])
+	var output string
+	app := &cli.App{
+		Name:  "Brainfuck Interpreter",
+		Usage: "A Brainfuck cli interpreter",
+		Action: func(c *cli.Context) error {
+			if len(c.Args()) > 0 {
+				file, err := os.Open(c.Args().Get(0))
+				if err != nil {
+					log.Fatal(err)
+				}
+				defer file.Close()
+				output=Interpret(file)
+				err = writeOutputData(output)
+				if err != nil {
+					log.Fatal("found error while interpreting input " + err.Error())
+				}
 			} else {
-				data[data_ptr] = 0
+				log.Fatal("Fatal error: No input file\n")
 			}
-		case '[':
-			bf_stack.Push(uint16(i))
-		case ']':
-			var err error
-			bf_ptr, err = bf_stack.Pop()
-			if err != nil {
-				return result, err
-			}
-
-			if data[data_ptr] != 0 {
-				i = int(bf_ptr) - 1
-			}
-		}
-		i++
+			return nil
+		},
 	}
-	if len(bf_stack) != 0 {
-		return result, errors.New("Compilation error.")
-	}
-	return result, nil
-}
-
-// This will read input from the file name
-func readInputData(filename string) (string, error) {
-	data, err := ioutil.ReadFile(filename)
+	err := app.Run(os.Args)
 	if err != nil {
-		fmt.Println("File reading error", err)
-		return "", err
+		log.Fatal(err)
 	}
-	return string(data), nil
-}
 
-// This fucntion will be use to writer interpreted from input
+}
+//This fucntion will be use to writer interpreted from input
 func writeOutputData(output string) error {
-	err := ioutil.WriteFile("output.txt", []byte(output), 0644)
+	err := os.WriteFile("output.txt", []byte(output), 0644)
 	if err != nil {
 		fmt.Println("File reading error", err)
 		return err

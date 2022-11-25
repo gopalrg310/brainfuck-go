@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM golang:1.16.7-alpine3.14 as builder
+FROM golang:1.19.3-alpine3.16 as builder
 ENV GOOS=linux
 RUN apk add --update git openssh-client && rm -rf /var/cache/apk/* && \
     mkdir /root/.ssh && echo "StrictHostKeyChecking no" > /root/.ssh/config && \
@@ -9,4 +9,4 @@ RUN apk add --update git openssh-client && rm -rf /var/cache/apk/* && \
 WORKDIR /brainfuck-go
 COPY . .
 RUN go mod download && \
-    go build -o brainfuck-go bf.go
+    go build -o brainfuck-go BF.go
