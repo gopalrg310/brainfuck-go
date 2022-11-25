@@ -7,7 +7,7 @@ import (
 	"io/ioutil"
 )
 
-//struture OutputStack to store the index and the character it got interpreted
+// struture OutputStack to store the index and the character it got interpreted
 type OutputStack struct {
 	Letter string
 	Index  int
@@ -21,14 +21,14 @@ func (s *Stack) Push(v uint16) {
 	*s = append(*s, v)
 }
 
-func (s *Stack) Pop() uint16 {
+func (s *Stack) Pop() (uint16, error) {
 	l := len(*s)
 	if l > 0 {
 		op := (*s)[l-1]
 		*s = (*s)[:l-1]
-		return op
+		return op, nil
 	}
-	return ""
+	return 0, errors.New("Compilation error.")
 }
 
 func (s *Stack) Top() uint16 {
@@ -39,6 +39,7 @@ func (s *Stack) Top() uint16 {
 func (s Stack) Len() int {
 	return len(s)
 }
+
 const (
 	arraylen = 65536
 )
@@ -87,8 +88,8 @@ func main() {
 	fmt.Println(response)
 }
 
-//This will be the major function for that perform as interpreter
-//The terms are followed that defined in
+// This will be the major function for that perform as interpreter
+// The terms are followed that defined in
 func interpret_bf(input, readinput string) (string, error) {
 	result := ""
 	i := 0
@@ -118,11 +119,12 @@ func interpret_bf(input, readinput string) (string, error) {
 		case '[':
 			bf_stack.Push(uint16(i))
 		case ']':
-			if len(bf_stack) == 0 {
-				return result, errors.New("Compilation error.")
+			var err error
+			bf_ptr, err = bf_stack.Pop()
+			if err != nil {
+				return result, err
 			}
-			bf_ptr = bf_stack.Pop()
-			
+
 			if data[data_ptr] != 0 {
 				i = int(bf_ptr) - 1
 			}
@@ -135,7 +137,7 @@ func interpret_bf(input, readinput string) (string, error) {
 	return result, nil
 }
 
-//This will read input from the file name
+// This will read input from the file name
 func readInputData(filename string) (string, error) {
 	data, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -145,7 +147,7 @@ func readInputData(filename string) (string, error) {
 	return string(data), nil
 }
 
-//This fucntion will be use to writer interpreted from input
+// This fucntion will be use to writer interpreted from input
 func writeOutputData(output string) error {
 	err := ioutil.WriteFile("output.txt", []byte(output), 0644)
 	if err != nil {
