@@ -21,7 +21,7 @@ func (s *Stack) Push(v uint16) {
 	*s = append(*s, v)
 }
 
-func (s *Stack) Pop() string {
+func (s *Stack) Pop() uint16 {
 	l := len(*s)
 	if l > 0 {
 		op := (*s)[l-1]
@@ -94,7 +94,7 @@ func interpret_bf(input, readinput string) (string, error) {
 	i := 0
 	data := make([]int16, arraylen)
 	var bf_ptr, data_ptr uint16 = 0, 0
-	var bf_stack stack
+	var bf_stack Stack
 	//Iterating input character one by one
 	for i < len(input) {
 		switch input[i] {
