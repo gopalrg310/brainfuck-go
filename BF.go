@@ -15,6 +15,30 @@ type OutputStack struct {
 
 var response []OutputStack
 
+type Stack []uint16
+
+func (s *Stack) Push(v uint16) {
+	*s = append(*s, v)
+}
+
+func (s *Stack) Pop() string {
+	l := len(*s)
+	if l > 0 {
+		op := (*s)[l-1]
+		*s = (*s)[:l-1]
+		return op
+	}
+	return ""
+}
+
+func (s *Stack) Top() uint16 {
+	n := len(*s) - 1
+	return (*s)[n]
+}
+
+func (s Stack) Len() int {
+	return len(s)
+}
 const (
 	arraylen = 65536
 )
@@ -70,7 +94,7 @@ func interpret_bf(input, readinput string) (string, error) {
 	i := 0
 	data := make([]int16, arraylen)
 	var bf_ptr, data_ptr uint16 = 0, 0
-	bf_stack := make([]uint16, 0)
+	var bf_stack stack
 	//Iterating input character one by one
 	for i < len(input) {
 		switch input[i] {
@@ -92,14 +116,13 @@ func interpret_bf(input, readinput string) (string, error) {
 				data[data_ptr] = 0
 			}
 		case '[':
-			bf_stack = append(bf_stack, uint16(i))
+			bf_stack.Push(uint16(i))
 		case ']':
 			if len(bf_stack) == 0 {
 				return result, errors.New("Compilation error.")
 			}
-			bf_ptr = bf_stack[len(bf_stack)-1]
-			bf_stack = bf_stack[:len(bf_stack)-1]
-
+			bf_ptr = bf_stack.Pop()
+			
 			if data[data_ptr] != 0 {
 				i = int(bf_ptr) - 1
 			}
