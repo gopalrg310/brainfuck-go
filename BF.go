@@ -62,7 +62,7 @@ func Execute(op string, indexPtr *int, program *[]uint32, output *string) {
 		(*program)[*indexPtr]--
 	// Output the character signified by the cell at the pointer
 	case ".":
-		character := string((*program)[*indexPtr])
+		character := fmt.Sprintf("%b",(*program)[*indexPtr])
 		*output+=fmt.Sprint(character)
 	// Input a character and store it in the cell at the pointer
 	case ",":
