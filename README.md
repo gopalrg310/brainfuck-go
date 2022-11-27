@@ -7,7 +7,7 @@ This is the possible implementation of a Brainfuck interpreter by any means. Nor
 The goal from this was to learn a bit about how interpreters and compilers work. Using Brainfuck looked to be the simplest way to achieve this.
 
 
- try this `go get github.com/gravip214/brainfuck-go`
+ try this `go get github.com/gopalrg310/brainfuck-go`
  
 Run below command to run the program
 
