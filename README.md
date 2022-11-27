@@ -13,9 +13,19 @@ Run below command to run the program
 
 `go build`
 
+`./brainfuck-go -h`
+
 Usage of ./brainfuck-go:
 
-`./brainfuck-go <filename>`
+  -filename string
+
+    	Enter input file name to interpret (default "input.bf")
+
+  -input string
+
+    	Enter input character if required
+
+`./brainfuck-go -filename input.bf -input m`
 
 To run the unit test
 
